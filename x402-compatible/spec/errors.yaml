@@ -1,0 +1,75 @@
+
+openapi: 3.0.3
+info:
+  title: "Errors API"
+  version: "v1"
+  summary: "Defines the error codes."
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+
+        code:
+          type: string
+          description: |
+            A machine-readable error code.
+            Common x402 codes:
+            - `payment_required`: Default 402 error.
+            - `insufficient_funds`: Wallet lacks funds.
+            - `token_expired`: Session token expired.
+            - `session_invalid`: Session token invalid or revoked.
+            - `signature_invalid`: Wallet signature verification failed.
+          enum:
+            - payment_required
+            - insufficient_funds
+            - token_expired
+            - session_invalid
+            - signature_invalid
+            - internal_server_error
+            - bad_request
+            - not_found
+            - unauthorized
+            - conflict
+        message:
+          type: string
+          description: "A human-readable error message."
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          $ref: '#/components/schemas/Error'
+  responses:
+    BadRequest:
+      description: "Bad Request"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: "Unauthorized"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: "Not Found"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: "Conflict"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: "Internal Server Error"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

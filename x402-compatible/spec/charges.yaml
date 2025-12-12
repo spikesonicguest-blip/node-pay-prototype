@@ -1,0 +1,236 @@
+
+openapi: 3.0.3
+info:
+  title: "Charges API"
+  version: "v1"
+  summary: "Defines the Charge, Refund, and SettlementRule objects and the API for creating and retrieving them."
+paths:
+  /v1/charges:
+    post:
+      summary: Create a Charge
+      description: |
+        Creates a new charge. This is the first step in the payment process.
+        The charge object contains the payment details, such as the amount and currency.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChargeRequest'
+      responses:
+        '200':
+          description: Charge created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Charge'
+  /v1/charges/{id}:
+    get:
+      summary: Retrieve a Charge
+      description: |
+        Retrieves a charge by its ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Charge retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Charge'
+  /v1/refunds:
+    post:
+      summary: Create a Refund
+      description: |
+        Creates a new refund for a charge.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRefundRequest'
+      responses:
+        '200':
+          description: Refund created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+  /v1/refunds/{id}:
+    get:
+      summary: Retrieve a Refund
+      description: |
+        Retrieves a refund by its ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Refund retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+components:
+  schemas:
+    CreateChargeRequest:
+      type: object
+      required:
+        - pricing_currency
+        - amount_pricing
+      properties:
+        pricing_currency:
+          type: string
+          description: "The currency the merchant uses to price the order."
+          example: "USD"
+        amount_pricing:
+          type: string
+          description: "The priced amount."
+          example: "100.00"
+        asset_symbol:
+          type: string
+          description: "The crypto asset the user will pay with."
+          example: "USDC"
+        network:
+          type: string
+          description: "The network the user will pay on."
+          example: "base"
+        settlement_rule_id:
+          type: string
+          description: "The ID of the settlement rule to use for this charge."
+        description:
+          type: string
+          description: "A description of the charge."
+        metadata:
+          type: object
+          description: "Additional metadata."
+    Charge:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "The charge ID."
+        status:
+          type: string
+          description: "The status of the charge."
+          enum:
+            - new
+            - pending
+            - paid
+            - expired
+            - failed
+        pricing_currency:
+          type: string
+          description: "The currency the merchant uses to price the order."
+        amount_pricing:
+          type: string
+          description: "The priced amount."
+        asset_symbol:
+          type: string
+          description: "The crypto asset the user will pay with."
+        network:
+          type: string
+          description: "The network the user will pay on."
+        amount:
+          type: string
+          description: "The amount of the payment asset to be paid."
+        settlement_asset:
+          type: string
+          description: "The asset that the merchant will be settled in."
+        settlement_amount:
+          type: string
+          description: "The amount of the settlement asset."
+        payment_url:
+          type: string
+          description: "The URL where the user can make the payment."
+        pay_to:
+          type: string
+          description: "The specific address where funds should be sent for this charge (Dynamic 'payTo' routing)."
+        beneficiary:
+          type: object
+          description: "Entity receiving the payment (for UI display)."
+          properties:
+            name:
+              type: string
+            avatar_url:
+              type: string
+        expires_at:
+          type: string
+          format: date-time
+          description: "The time when the charge expires."
+        created_at:
+          type: string
+          format: date-time
+          description: "The time when the charge was created."
+        metadata:
+          type: object
+          description: "Additional metadata."
+    CreateRefundRequest:
+      type: object
+      required:
+        - charge_id
+        - amount
+      properties:
+        charge_id:
+          type: string
+          description: "The ID of the charge to refund."
+        amount:
+          type: string
+          description: "The amount to refund."
+        reason:
+          type: string
+          description: "The reason for the refund."
+        metadata:
+          type: object
+          description: "Additional metadata."
+    Refund:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "The refund ID."
+        charge_id:
+          type: string
+          description: "The ID of the charge that was refunded."
+        status:
+          type: string
+          description: "The status of the refund."
+          enum:
+            - pending
+            - succeeded
+            - failed
+        amount:
+          type: string
+          description: "The amount refunded."
+        reason:
+          type: string
+          description: "The reason for the refund."
+        created_at:
+          type: string
+          format: date-time
+          description: "The time when the refund was created."
+        metadata:
+          type: object
+          description: "Additional metadata."
+    SettlementRule:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "The settlement rule ID."
+        asset:
+          type: string
+          description: "The asset to settle in."
+        network:
+          type: string
+          description: "The network to settle on."
+        address:
+          type: string
+          description: "The address to settle to."

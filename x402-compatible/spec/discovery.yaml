@@ -1,0 +1,59 @@
+openapi: 3.0.3
+info:
+  title: "Discovery API"
+  version: "v1"
+  summary: "Defines the Discovery endpoint for x402 V2 service metadata and auto-configuration."
+paths:
+  /v1/discovery:
+    get:
+      summary: Retrieve Service Metadata
+      description: |
+        Returns machine-readable metadata about the service, including supported assets, networks, and facilitator preferences.
+        Used by x402 wallets and agents to automatically configure payments.
+      responses:
+        '200':
+          description: Service metadata retrieval successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceMetadata'
+components:
+  schemas:
+    ServiceMetadata:
+      type: object
+      properties:
+        version:
+          type: string
+          description: "x402 protocol version supported (e.g., '2.0.0')."
+          example: "2.0.0"
+        supported_assets:
+          type: array
+          description: "List of assets accepted by this service."
+          items:
+            $ref: '#/components/schemas/AssetConfig'
+        pricing_rules:
+          type: array
+          description: "Overview of pricing models (optional)."
+          items:
+            type: object
+            description: "Flexible pricing rule description."
+        facilitator_info:
+          type: object
+          description: "Information about the facilitator handling payments."
+          properties:
+            name:
+              type: string
+            url:
+              type: string
+    AssetConfig:
+      type: object
+      properties:
+        symbol:
+          type: string
+          example: "USDC"
+        network:
+          type: string
+          example: "base"
+        address:
+          type: string
+          description: "Default payment address for this asset (can be overridden per charge)."

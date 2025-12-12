@@ -1,0 +1,142 @@
+
+openapi: 3.0.3
+info:
+  title: "Facilitator API"
+  version: "v1"
+  summary: "Defines the Facilitator's API for creating and verifying charges."
+paths:
+  /v1/charges:
+    post:
+      summary: Create a Charge
+      description: |
+        Creates a new charge. This endpoint is called by the NodePay API Server.
+        The charge object contains the payment details, such as the amount and currency.
+        The facilitator will start monitoring the blockchain for the payment.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChargeRequest'
+      responses:
+        '200':
+          description: Charge created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Charge'
+  /v1/charges/{id}:
+    get:
+      summary: Retrieve a Charge
+      description: |
+        Retrieves a charge by its ID. This endpoint is called by the NodePay API Server to verify the payment status.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Charge retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Charge'
+components:
+  schemas:
+    CreateChargeRequest:
+      type: object
+      required:
+        - pricing_currency
+        - amount_pricing
+      properties:
+        pricing_currency:
+          type: string
+          description: "The currency the merchant uses to price the order."
+          example: "USD"
+        amount_pricing:
+          type: string
+          description: "The priced amount."
+          example: "100.00"
+        asset_symbol:
+          type: string
+          description: "The crypto asset the user will pay with."
+          example: "USDC"
+        network:
+          type: string
+          description: "The network the user will pay on."
+          example: "base"
+        settlement_rule:
+          $ref: '#/components/schemas/SettlementRule'
+        description:
+          type: string
+          description: "A description of the charge."
+        metadata:
+          type: object
+          description: "Additional metadata."
+    Charge:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "The charge ID."
+        status:
+          type: string
+          description: "The status of the charge."
+          enum:
+            - new
+            - pending
+            - paid
+            - expired
+            - failed
+        pricing_currency:
+          type: string
+          description: "The currency the merchant uses to price the order."
+        amount_pricing:
+          type: string
+          description: "The priced amount."
+        asset_symbol:
+          type: string
+          description: "The crypto asset the user will pay with."
+        network:
+          type: string
+          description: "The network the user will pay on."
+        amount:
+          type: string
+          description: "The amount of the payment asset to be paid."
+        address:
+          type: string
+          description: "The address to send the payment to."
+        settlement_asset:
+          type: string
+          description: "The asset that the merchant will be settled in."
+        settlement_amount:
+          type: string
+          description: "The amount of the settlement asset."
+        expires_at:
+          type: string
+          format: date-time
+          description: "The time when the charge expires."
+        created_at:
+          type: string
+          format: date-time
+          description: "The time when the charge was created."
+        metadata:
+          type: object
+          description: "Additional metadata."
+    SettlementRule:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "The settlement rule ID."
+        asset:
+          type: string
+          description: "The asset to settle in."
+        network:
+          type: string
+          description: "The network to settle on."
+        address:
+          type: string
+          description: "The address to settle to."
