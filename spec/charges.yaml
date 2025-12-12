@@ -94,14 +94,14 @@ components:
           type: string
           description: "The priced amount."
           example: "100.00"
-        asset_symbol:
+        asset:
           type: string
-          description: "The crypto asset the user will pay with."
-          example: "USDC"
+          description: "The crypto asset contract address or ISO code (x402 format)."
+          example: "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
         network:
           type: string
-          description: "The network the user will pay on."
-          example: "base"
+          description: "The blockchain network identifier in CAIP-2 format."
+          example: "eip155:84532"
         settlement_rule_id:
           type: string
           description: "The ID of the settlement rule to use for this charge."
@@ -132,12 +132,12 @@ components:
         amount_pricing:
           type: string
           description: "The priced amount."
-        asset_symbol:
+        asset:
           type: string
-          description: "The crypto asset the user will pay with."
+          description: "The crypto asset contract address or ISO code."
         network:
           type: string
-          description: "The network the user will pay on."
+          description: "The blockchain network identifier in CAIP-2 format."
         amount:
           type: string
           description: "The amount of the payment asset to be paid."

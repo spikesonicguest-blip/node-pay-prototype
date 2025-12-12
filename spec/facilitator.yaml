@@ -1,35 +1,83 @@
-
 openapi: 3.0.3
 info:
   title: "Facilitator API"
   version: "v1"
-  summary: "Defines the Facilitator's API for creating and verifying charges."
+  summary: "Defines the Facilitator's API for verifying and settling x402 payments."
 paths:
-  /v1/charges:
+  /v1/verify:
     post:
-      summary: Create a Charge
+      summary: Verify Payment Authorization
       description: |
-        Creates a new charge. This endpoint is called by the NodePay API Server.
-        The charge object contains the payment details, such as the amount and currency.
-        The facilitator will start monitoring the blockchain for the payment.
+        Verifies a payment authorization without executing the transaction on the blockchain.
+        Checks signature, balance, and constraints.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateChargeRequest'
+              $ref: '#/components/schemas/VerifyRequest'
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyResponse'
+
+  /v1/settle:
+    post:
+      summary: Settle Payment
+      description: |
+        Executes a verified payment by broadcasting the transaction to the blockchain.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRequest'
+      responses:
+        '200':
+          description: Settlement result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettleResponse'
+
+  /v1/supported:
+    get:
+      summary: Get Supported Capabilities
+      description: |
+        Returns the list of payment schemes, networks, and extensions supported by the facilitator.
+      responses:
+        '200':
+          description: Supported capabilities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportedResponse'
+
+  # NodePay Managed Mode Endpoints (Optional additions to core x402)
+  /v1/charges:
+    post:
+      summary: Create a Charge (Managed Mode)
+      description: |
+        Creates a new charge for managed payment flows where the facilitator tracks state.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './charges.yaml#/components/schemas/CreateChargeRequest'
       responses:
         '200':
           description: Charge created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Charge'
+                $ref: './charges.yaml#/components/schemas/Charge'
   /v1/charges/{id}:
     get:
       summary: Retrieve a Charge
-      description: |
-        Retrieves a charge by its ID. This endpoint is called by the NodePay API Server to verify the payment status.
       parameters:
         - name: id
           in: path
@@ -42,101 +90,91 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Charge'
+                $ref: './charges.yaml#/components/schemas/Charge'
+
 components:
   schemas:
-    CreateChargeRequest:
+    VerifyRequest:
       type: object
       required:
-        - pricing_currency
-        - amount_pricing
+        - paymentPayload
+        - paymentRequirements
       properties:
-        pricing_currency:
-          type: string
-          description: "The currency the merchant uses to price the order."
-          example: "USD"
-        amount_pricing:
-          type: string
-          description: "The priced amount."
-          example: "100.00"
-        asset_symbol:
-          type: string
-          description: "The crypto asset the user will pay with."
-          example: "USDC"
-        network:
-          type: string
-          description: "The network the user will pay on."
-          example: "base"
-        settlement_rule:
-          $ref: '#/components/schemas/SettlementRule'
-        description:
-          type: string
-          description: "A description of the charge."
-        metadata:
-          type: object
-          description: "Additional metadata."
-    Charge:
+        paymentPayload:
+          $ref: './x402_protocol.yaml#/components/schemas/PaymentPayload'
+        paymentRequirements:
+          $ref: './x402_protocol.yaml#/components/schemas/PaymentRequirements'
+
+    VerifyResponse:
       type: object
+      required:
+        - isValid
       properties:
-        id:
+        isValid:
+          type: boolean
+        invalidReason:
           type: string
-          description: "The charge ID."
-        status:
+        payer:
           type: string
-          description: "The status of the charge."
-          enum:
-            - new
-            - pending
-            - paid
-            - expired
-            - failed
-        pricing_currency:
-          type: string
-          description: "The currency the merchant uses to price the order."
-        amount_pricing:
-          type: string
-          description: "The priced amount."
-        asset_symbol:
-          type: string
-          description: "The crypto asset the user will pay with."
-        network:
-          type: string
-          description: "The network the user will pay on."
-        amount:
-          type: string
-          description: "The amount of the payment asset to be paid."
-        address:
-          type: string
-          description: "The address to send the payment to."
-        settlement_asset:
-          type: string
-          description: "The asset that the merchant will be settled in."
-        settlement_amount:
-          type: string
-          description: "The amount of the settlement asset."
-        expires_at:
-          type: string
-          format: date-time
-          description: "The time when the charge expires."
-        created_at:
-          type: string
-          format: date-time
-          description: "The time when the charge was created."
-        metadata:
-          type: object
-          description: "Additional metadata."
-    SettlementRule:
+
+    SettleResponse:
       type: object
+      required:
+        - success
+        - transaction
+        - network
       properties:
-        id:
+        success:
+          type: boolean
+        errorReason:
           type: string
-          description: "The settlement rule ID."
-        asset:
+        payer:
           type: string
-          description: "The asset to settle in."
+        transaction:
+          type: string
+          description: "Blockchain transaction hash."
         network:
           type: string
-          description: "The network to settle on."
-        address:
+          description: "CAIP-2 network identifier."
+
+    SupportedResponse:
+      type: object
+      required:
+        - kinds
+        - extensions
+        - signers
+      properties:
+        kinds:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportedKind'
+        extensions:
+          type: array
+          items:
+            type: string
+        signers:
+          type: object
+          description: "Map of CAIP-2 patterns to signer addresses."
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    SupportedKind:
+      type: object
+      required:
+        - x402Version
+        - scheme
+        - network
+      properties:
+        x402Version:
+          type: integer
+          example: 2
+        scheme:
           type: string
-          description: "The address to settle to."
+          example: "exact"
+        network:
+          type: string
+          example: "eip155:84532"
+        extra:
+          type: object

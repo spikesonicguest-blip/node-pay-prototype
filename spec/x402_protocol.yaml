@@ -1,0 +1,109 @@
+openapi: 3.0.3
+info:
+  title: "x402 Wire Protocol V2"
+  version: "2.0.0"
+  summary: "Defines the exact wire format for x402 V2 exchanges (HTTP 402 responses and Payment Headers)."
+paths: {}
+components:
+  schemas:
+    PaymentRequired:
+      type: object
+      required:
+        - x402Version
+        - resource
+        - accepts
+      properties:
+        x402Version:
+          type: integer
+          description: "Protocol version identifier (must be 2)."
+          example: 2
+        error:
+          type: string
+          description: "Human-readable error message explaining why payment is required."
+        resource:
+          $ref: '#/components/schemas/ResourceInfo'
+        accepts:
+          type: array
+          description: "Array of payment requirement objects defining acceptable payment methods."
+          items:
+            $ref: '#/components/schemas/PaymentRequirements'
+        extensions:
+          type: object
+          description: "Protocol extensions data."
+
+    PaymentPayload:
+      type: object
+      required:
+        - x402Version
+        - accepted
+        - payload
+      properties:
+        x402Version:
+          type: integer
+          description: "Protocol version identifier."
+          example: 2
+        resource:
+          $ref: '#/components/schemas/ResourceInfo'
+        accepted:
+          $ref: '#/components/schemas/PaymentRequirements'
+        payload:
+          type: object
+          description: "Scheme-specific payment data (e.g. signature, authorization)."
+        extensions:
+          type: object
+          description: "Protocol extensions data."
+
+    PaymentRequirements:
+      type: object
+      required:
+        - scheme
+        - network
+        - amount
+        - asset
+        - payTo
+        - maxTimeoutSeconds
+      properties:
+        scheme:
+          type: string
+          description: "Payment scheme identifier (e.g., 'exact')."
+          example: "exact"
+        network:
+          type: string
+          description: "Blockchain network identifier in CAIP-2 format (e.g., 'eip155:84532')."
+          example: "eip155:84532"
+        amount:
+          type: string
+          description: "Required payment amount in atomic token units."
+          example: "10000"
+        asset:
+          type: string
+          description: "Token contract address or ISO 4217 currency code for fiat."
+          example: "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+        payTo:
+          type: string
+          description: "Recipient wallet address or role constant (e.g., 'merchant')."
+          example: "0x209693Bc6afc0C5328bA36FaF03C514EF312287C"
+        maxTimeoutSeconds:
+          type: integer
+          description: "Maximum time allowed for payment completion."
+          example: 60
+        extra:
+          type: object
+          description: "Scheme-specific additional information."
+
+    ResourceInfo:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          description: "URL of the protected resource."
+          example: "https://api.example.com/premium-data"
+        description:
+          type: string
+          description: "Human-readable description of the resource."
+        mimeType:
+          type: string
+          description: "MIME type of the expected response."
+          example: "application/json"

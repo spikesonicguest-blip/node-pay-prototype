@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NodePay Shop Example</title>
+    <style>
+      body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+      button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+      #console { background: #f0f0f0; padding: 10px; margin-top: 20px; white-space: pre-wrap; height: 300px; overflow-y: scroll; border: 1px solid #ccc; }
+      .product { border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    </style>
+  </head>
+  <body>
+    <h1>NodePay Digital Shop</h1>
+    
+    <div class="product">
+        <h2>Digital Widget</h2>
+        <p>Price: 0.05 USDC</p>
+        <p>A premium digital widget delivered instantly.</p>
+        <button id="buyBtn">Buy Now</button>
+    </div>
+
+    <h3>Transaction Log</h3>
+    <div id="console"></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

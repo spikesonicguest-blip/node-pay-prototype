@@ -1,0 +1,40 @@
+openapi: 3.0.3
+info:
+  title: "Webhooks API"
+  version: "v1"
+  summary: "Defines the structure of webhook events sent by the Facilitator."
+paths: {}
+components:
+  schemas:
+    WebhookEvent:
+      type: object
+      required:
+        - id
+        - type
+        - created_at
+        - data
+      properties:
+        id:
+          type: string
+          description: "Unique identifier for the event."
+          example: "evt_1234567890"
+        type:
+          type: string
+          description: "The type of event."
+          enum:
+            - charge.paid
+            - charge.failed
+            - charge.expired
+            - refund.created
+            - refund.succeeded
+            - refund.failed
+        created_at:
+          type: string
+          format: date-time
+          description: "Time at which the event was created."
+        data:
+          type: object
+          description: "The object associated with the event."
+          oneOf:
+            - $ref: './charges.yaml#/components/schemas/Charge'
+            - $ref: './charges.yaml#/components/schemas/Refund'

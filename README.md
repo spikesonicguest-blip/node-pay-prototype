@@ -143,10 +143,12 @@ Refer to the `spec/errors.yaml` file for a complete list of error codes.
 
 The new specification will be defined in the following files:
 
-*   `spec/charges.yaml`: Defines the `Charge` object and the API for creating and retrieving charges.
-*   `spec/facilitator.yaml`: Defines the Facilitator's API for creating charges and verifying tokens.
+*   `spec/charges.yaml`: Defines the internal `Charge` object (Database model).
+*   `spec/x402_protocol.yaml`: Defines the **Wire Protocol** (`PaymentRequired`, `PaymentPayload`) used in 402 exchanges.
+*   `spec/facilitator.yaml`: Defines the Facilitator's API for verifying (`/v1/verify`), settling (`/v1/settle`), and discovery (`/v1/supported`).
 *   `spec/errors.yaml`: Defines the error codes.
 *   `spec/discovery.yaml`: Defines the discovery endpoint for facilitator auto-configuration.
+*   `spec/webhooks.yaml`: Defines the structure of webhook events (`charge.paid`, `refund.failed`, etc.).
 
 ## Wallet-based Identity (x402 V2)
 
@@ -162,7 +164,7 @@ To reduce friction, NodePay supports the `SIGN-IN-WITH-X` header.
 NodePay implements the x402 Discovery extension.
 
 *   **Endpoint:** `/v1/discovery` (or `/.well-known/x402-discovery`)
-*   **Purpose:** Exposes machine-readable metadata about the service.
+*   **Purpose:** Exposes, machine-readable metadata about the service.
 *   **Content:**
     *   Supported chains and assets (USDC on Base, ETH on Mainnet, etc.)
     *   Pricing rules (e.g., "1 USDC per request")
@@ -170,5 +172,127 @@ NodePay implements the x402 Discovery extension.
     *   Settlement constraints
 
 This allows any x402-compatible wallet or agent to automatically "read" the store's requirements and configure the payment transaction without manual developer integration.
+
+## Integration Guide
+
+This guide describes how to integrate NodePay into your application using our SDKs. For detailed SDK specifications, see [spec/sdk.md](spec/sdk.md).
+
+### 1. Server Integration (Node.js/Express)
+
+Install the facilitator SDK (if applicable) or backend:
+
+```bash
+# Example for running the facilitator
+cd facilitator
+go run cmd/api/main.go
+```
+
+Add the middleware to your API:
+
+```javascript
+const express = require('express');
+const { nodepay } = require('@nodepay/facilitator');
+
+const app = express();
+
+// 1. Configure NodePay
+const paywall = nodepay({
+  apiKey: process.env.NODEPAY_API_KEY,
+  settlement: {
+    address: '0x1234567890abcdef1234567890abcdef12345678', // Your wallet address
+    network: 'base', // Optional: defaults to base
+    asset: 'USDC' // Optional: defaults to USDC
+  },
+  facilitator: { url: 'https://api.facilitator.com' } // URL of your Facilitator instance
+});
+
+// 2. Protect Routes
+// Basic usage: Require $0.05 USD for this endpoint
+app.get('/api/premium-data', 
+  paywall.requirePayment({ amount: '0.05', currency: 'USD' }), 
+  (req, res) => {
+    res.json({ secret: 'Standard x402 content' });
+  }
+);
+
+// 3. Enable Discovery (Optional but recommended)
+app.use(paywall.discovery());
+
+app.listen(3000);
+```
+
+### 2. Client Integration (Browser/Agent)
+
+Install the client SDK:
+
+```bash
+npm install @nodepay/client
+```
+
+Fetch protected resources:
+
+```javascript
+import { NodepayClient } from '@nodepay/client';
+
+// 1. Initialize Client
+// In browser, it can automatically interpret window.ethereum
+const client = new NodepayClient({
+  wallet: window.ethereum 
+});
+
+async function getData() {
+  try {
+    // 2. Make Request
+    // The client automatically handles 402 responses, 
+    // prompts the user to sign/pay, and retries.
+    const res = await client.fetch('https://api.yoursite.com/api/premium-data');
+    
+    const data = await res.json();
+    console.log(data);
+  } catch (error) {
+    console.error("Payment failed or rejected", error);
+  }
+}
+```
+
+### 3. Running the End-to-End Demo
+
+The repository includes a complete example set to demonstrate the full flow.
+
+#### Prerequisites
+- Go 1.21+
+- Node.js & npm
+- A browser with Metamask installed
+
+#### Step 1: Start the Facilitator
+The Facilitator acts as the payment processor and verification oracle.
+```bash
+cd facilitator
+go run cmd/api/main.go
+# Server listens on :8080
+```
+
+#### Step 2: Start the Merchant Server (Example)
+The Merchant server sells a digital widget and enforces payment using the x402 protocol.
+```bash
+cd examples/server
+go run cmd/api/main.go
+# Server listens on :8081
+```
+
+#### Step 3: Start the Client App (Example)
+The Client app connects to your wallet and handles the purchase flow.
+```bash
+cd examples/client
+npm install
+npm run dev
+# App runs on http://localhost:5173
+```
+
+**Demo Flow:**
+1. Open the Client App URL.
+2. Click **Buy Now**.
+3. Accept the signature request in Metamask (Mocked mode uses 0-value tx or signature).
+4. See the successful purchase alert and the "premium" data returned.
 
 This new architecture significantly simplifies the payment process for both merchants and users, while also providing a more flexible and extensible platform for future development.
