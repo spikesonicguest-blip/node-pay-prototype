@@ -276,7 +276,7 @@ go run cmd/api/main.go
 The Merchant server sells a digital widget and enforces payment using the x402 protocol.
 ```bash
 cd examples/server
-go run cmd/api/main.go
+go run cmd/main.go
 # Server listens on :8081
 ```
 

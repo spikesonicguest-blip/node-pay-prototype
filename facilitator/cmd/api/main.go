@@ -3,11 +3,23 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	
 	"nodepay-facilitator/internal/handlers"
+	
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Debug: Print CWD
+	cwd, _ := os.Getwd()
+	log.Printf("Starting Facilitator in directory: %s\n", cwd)
+
+	// Load .env file if it exists
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using defaults or system environment variables")
+	}
+
 	// Initialize Handlers
 	h := handlers.New()
 

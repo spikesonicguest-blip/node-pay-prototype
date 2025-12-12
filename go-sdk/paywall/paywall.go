@@ -2,6 +2,7 @@ package paywall
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	
 	"nodepay-go-sdk/client"
@@ -47,11 +48,21 @@ func (p *Paywall) Handler(cfg PaymentConfig) func(http.Handler) http.Handler {
 			// 1. Check for Payment (Payment-Signature)
 			paymentSig := r.Header.Get("Payment-Signature")
 			if paymentSig != "" {
-				// Verify via Client
-				valid, err := p.Client.Verify(paymentSig, requirements)
-				if err == nil && valid {
-					next.ServeHTTP(w, r)
-					return
+				// Parse JSON signature
+				var payload map[string]interface{}
+				if err := json.Unmarshal([]byte(paymentSig), &payload); err == nil {
+					// Verify and Settle via Client
+					success, txHash, err := p.Client.Settle(payload, requirements)
+					if err == nil && success {
+						fmt.Printf("[Paywall] Settlement Successful! Tx: %s\n", txHash)
+						next.ServeHTTP(w, r)
+						return
+					} else {
+						// Log failure
+						// fmt.Printf("Paywall Verification Failed. Error: %v, Valid: %v\n", err, valid)
+					}
+				} else {
+					// fmt.Printf("Paywall Failed to Unmarshal Signature: %v\n", err)
 				}
 			}
 

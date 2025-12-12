@@ -2,13 +2,26 @@
   "name": "@nodepay/client",
   "version": "1.0.0",
   "description": "NodePay Client SDK",
+  "type": "module",
   "main": "dist/index.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "test": "jest"
   },
-  "keywords": ["x402", "nodepay", "payments"],
+  "keywords": [
+    "x402",
+    "nodepay",
+    "payments"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
