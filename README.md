@@ -15,11 +15,9 @@ The x402-compatible architecture is based on the following core concepts:
 
 ## Component Responsibilities
 
-### NodePay API Server (Resource Server)
+### Resource Server (Merchant)
 
 *   **Resource Management:** Manages the resources that require payment.
-*   **Pricing and Quoting:** Determines the price of a resource and provides quotes.
-*   **Charge Creation:** Creates a `Charge` with the Facilitator when a resource requires payment.
 *   **Payment Requirement:** Responds with a `402 Payment Required` status code and a `PAYMENT-REQUIRED` header when a resource requires payment.
 *   **Payment Verification:** Verifies the payment with the Facilitator.
 *   **Resource Delivery:** Delivers the resource to the client after successful payment verification.
@@ -28,49 +26,44 @@ The x402-compatible architecture is based on the following core concepts:
 ### Facilitator
 
 *   **x402 Protocol Implementation:** Implements the x402 v2 protocol.
-*   **Charge Management:** Creates and manages `Charge` objects.
 *   **Payment Verification:** Verifies the payment on the blockchain.
 *   **Settlement Execution:** Executes the settlement based on the merchant's settlement rules.
-*   **Webhook Delivery:** Sends webhooks to the merchant's backend to notify them of payment events.
-*   **Discovery Service:** Crawls and indexes the NodePay API Server's metadata to automatically configure payment routing and UI.
+*   **Discovery Service:** Crawls and indexes the Resource Server's metadata to automatically configure payment routing and UI.
 
 ## Payment Flow
 
 The new payment flow is as follows:
 
-1.  **Request Resource:** The client requests a resource from the NodePay API Server.
-2.  **Create Charge:** The NodePay API Server determines that payment is required, and creates a `Charge` with the Facilitator.
-3.  **Payment Required:** The NodePay API Server responds to the client with a `402 Payment Required` status code and a `PAYMENT-REQUIRED` header, containing the payment details from the charge.
-4.  **Make Payment:** The user pays using the information from the `PAYMENT-REQUIRED` header.
-5.  **Request Resource Again:** The client requests the resource again.
-6.  **Verify Payment and Return Resource:** The NodePay API Server verifies the payment with the Facilitator. If the payment is successful, the server returns the resource to the client.
+1.  **Request Resource:** The client requests a resource from the Resource Server.
+2.  **Payment Required:** The Resource Server determines that payment is required and responds to the client with a `402 Payment Required` status code and a `PAYMENT-REQUIRED` header, containing the payment details (constructed via the NodePay SDK).
+3.  **Make Payment:** The user pays using the information from the `PAYMENT-REQUIRED` header.
+4.  **Request Resource Again:** The client requests the resource again with the payment proof (`Payment-Signature` or `Sign-In-With-X`).
+5.  **Verify Payment and Return Resource:** The Resource Server verifies the payment with the Facilitator. If the payment is valid and settled, the server returns the resource to the client.
 
 ```mermaid
 sequenceDiagram
     participant Client
-    participant NodePay API Server
+    participant Resource Server
     participant Facilitator
 
-    Client->>NodePay API Server: Request Resource
-    NodePay API Server->>Facilitator: Create Charge
-    Facilitator-->>NodePay API Server: Charge object (with payment details)
-    NodePay API Server-->>Client: 402 Payment Required (with PAYMENT-REQUIRED header)
+    Client->>Resource Server: Request Resource
+    Resource Server-->>Client: 402 Payment Required (PAYMENT-REQUIRED)
     
     Note over Client: User signs with wallet (Identity) OR makes payment
     
     rect rgb(200, 255, 200)
     Note right of Client: Scenario A: Wallet Identity (Session)
-    Client->>NodePay API Server: Request Resource (with SIGN-IN-WITH-X header)
-    NodePay API Server->>NodePay API Server: Verify Signature & Session
-    NodePay API Server-->>Client: Resource
+    Client->>Resource Server: Request Resource (with SIGN-IN-WITH-X header)
+    Resource Server->>Resource Server: Verify Signature & Session
+    Resource Server-->>Client: Resource
     end
 
     rect rgb(255, 200, 200)
     Note right of Client: Scenario B: Payment Required
-    Client->>NodePay API Server: Request Resource (again)
-    NodePay API Server->>Facilitator: Verify Payment for Charge
-    Facilitator-->>NodePay API Server: Payment Verified
-    NodePay API Server-->>Client: Resource
+    Client->>Resource Server: Request Resource (with PAYMENT-SIGNATURE)
+    Resource Server->>Facilitator: Verify & Settle Payment
+    Facilitator-->>Resource Server: Payment Verified & Settled
+    Resource Server-->>Client: Resource
     end
 ```
 
